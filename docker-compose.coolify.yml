@@ -1,0 +1,38 @@
+# Definição de serviço para o Coolify (build pack: docker-compose).
+# Se usares o build pack "Dockerfile", este ficheiro é ignorado.
+#
+# O domínio entra pelo Coolify: define SERVICE_FQDN_APP_8080=https://uso.<dominio>
+# nas variáveis de ambiente do serviço e o Traefik trata do TLS.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      TRACKER_DATA_DIR: /data
+      TRACKER_ADDR: ":8080"
+      TRACKER_PASSWORD: ${TRACKER_PASSWORD}
+      TRACKER_SECRET_KEY: ${TRACKER_SECRET_KEY}
+      TRACKER_PUBLIC_URL: ${TRACKER_PUBLIC_URL}
+      TRACKER_TRUST_PROXY: ${TRACKER_TRUST_PROXY:-true}
+      TRACKER_POLL_INTERVAL: ${TRACKER_POLL_INTERVAL:-2m}
+    volumes:
+      - tracker-data:/data
+    healthcheck:
+      test: ["CMD", "/ai-usage-tracker", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  tracker-data:

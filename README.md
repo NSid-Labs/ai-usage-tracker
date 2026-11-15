@@ -3,10 +3,15 @@
 **One self-hosted dashboard for all your AI subscriptions and API bills.** See how close you are to your Claude
 and ChatGPT limits, what your API keys cost per day, and when you'll run out, without opening five vendor consoles.
 
+> **This repository is a fork.** It is [Dukko/ai-usage-tracker](https://github.com/Dukko/ai-usage-tracker) (MIT)
+> plus a **Mistral Vibe Code** provider, built for a personal Coolify deployment. Upstream fixes can be merged
+> normally: the module path is unchanged on purpose.
+
 ![Dashboard](docs/screenshots/dashboard.png)
 
 - **Subscription limits**: 5-hour and weekly windows for **Claude Pro/Max**, **ChatGPT Plus/Pro (Codex)** and
-  **OpenCode Go**, with history and a forecast: *"At this pace: hits 100% in about 50m, before it resets."*
+  **OpenCode Go**, plus the monthly Vibe Code allowance of **Mistral Vibe** (fork addition), with history and a
+  forecast: *"At this pace: hits 100% in about 50m, before it resets."*
 - **Pay-as-you-go spend**: daily cost and tokens per model for the **Anthropic** and **OpenAI** APIs,
   **OpenRouter** (spend, key limits, credit balance), **OpenCode** Console budgets and local OpenCode sessions.
 - **Forecasts**: burn rate, projected month total, and when a balance or key limit runs out. Limit forecasts work
@@ -143,6 +148,24 @@ Alternatively, add an OpenCode API key under *API usage*. It reads the Go limits
 These are the endpoints OpenCode's own CLI reads (`packages/core/src/usage-limits.ts` in anomalyco/opencode),
 and the same approach as [OpenUsage](https://github.com/robinebers/openusage). They are not a documented
 public API. The Console URL can be overridden with `OPENCODE_CONSOLE_URL`.
+
+### Mistral Vibe Code
+
+Add your **Vibe API key** under *API key → Mistral Vibe Code*. The tracker reads the public billing API the
+Vibe CLI itself uses for its footer gauge:
+
+- `GET /v1/billing/subscription` — the plan (Free / Pro / Student / Team) and whether pay-as-you-go is on.
+- `GET /v1/billing/budget` — the monthly Vibe Code allowance as a percentage, plus its reset date.
+
+You get one **monthly** quota bar with the amount used of the total (`6.48 of 127.50`), the reset date and a
+`PAYG` marker when usage continues on pay-as-you-go past the allowance.
+
+- `/budget` needs the key to carry `see_org_inference_usage`. Without it, the tracker says so instead of showing
+  an empty card — create the key again with the permission or use a key with organization usage access.
+- Le Chat is not billed against this allowance; only Vibe Code is.
+- The API reports amounts with no currency, so the numbers are printed as-is. Set the UI currency in your head,
+  or override the base with `MISTRAL_BILLING_BASE` (default `https://api.mistral.ai/v1`).
+- Source of truth: `vibe/app_server/_billing.py` in [mistralai/mistral-vibe](https://github.com/mistralai/mistral-vibe).
 
 ### OpenCode local sessions (push)
 

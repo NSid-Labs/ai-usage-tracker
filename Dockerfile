@@ -14,7 +14,8 @@ FROM gcr.io/distroless/static-debian12:nonroot
 ARG VERSION=dev
 LABEL org.opencontainers.image.title="ai-usage-tracker" \
       org.opencontainers.image.description="Self-hosted dashboard for AI subscription limits and API spend" \
-      org.opencontainers.image.source="https://github.com/Dukko/ai-usage-tracker" \
+      org.opencontainers.image.source="https://github.com/NSid-Labs/ai-usage-tracker" \
+      org.opencontainers.image.upstream="https://github.com/Dukko/ai-usage-tracker" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.version="${VERSION}"
 COPY --from=build /out/ai-usage-tracker /ai-usage-tracker
