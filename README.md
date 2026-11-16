@@ -13,7 +13,8 @@ and ChatGPT limits, what your API keys cost per day, and when you'll run out, wi
   **OpenCode Go**, plus the monthly Vibe Code allowance of **Mistral Vibe** (fork addition), with history and a
   forecast: *"At this pace: hits 100% in about 50m, before it resets."*
 - **Pay-as-you-go spend**: daily cost and tokens per model for the **Anthropic** and **OpenAI** APIs,
-  **OpenRouter** (spend, key limits, credit balance), **OpenCode** Console budgets and local OpenCode sessions.
+  **OpenRouter** (spend, key limits, credit balance), **Refuseless** credit, **OpenCode** Console budgets
+  and local OpenCode sessions.
 - **Forecasts**: burn rate, projected month total, and when a balance or key limit runs out. Limit forecasts work
   from the first check, and API accounts backfill 30 days of history when you add them.
 - **Multi-user**: admin and read-only viewer accounts, sessions, and read-only API tokens for Home Assistant
@@ -166,6 +167,18 @@ You get one **monthly** quota bar with the amount used of the total (`6.48 of 12
 - The API reports amounts with no currency, so the numbers are printed as-is. Set the UI currency in your head,
   or override the base with `MISTRAL_BILLING_BASE` (default `https://api.mistral.ai/v1`).
 - Source of truth: `vibe/app_server/_billing.py` in [mistralai/mistral-vibe](https://github.com/mistralai/mistral-vibe).
+
+### Refuseless
+
+Add your **Refuseless API key** under *API key → Refuseless credits*. It reads `GET /v1/credits`,
+the endpoint that reports a key's balance:
+
+- **Balance**: available credit in USD, shown on the dashboard and in the Telegram bot.
+- **Key limit**: when the key carries its own spending cap, that also shows as a quota bar.
+
+Refuseless bills per token out of prepaid credit, so there is no reset window and no daily
+history — the account shows what is left, not what was spent today. Override the endpoint with
+`REFUSELESS_BASE_URL` if you use a mirror.
 
 ### OpenCode local sessions (push)
 
