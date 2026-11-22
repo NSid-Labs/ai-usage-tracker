@@ -9,8 +9,9 @@
       <div class="muted">{{.ProviderLabel}} · added {{date .CreatedAt}} · {{if .IsPush}}last push{{else}}updated{{end}} {{ago .LastPoll}}</div>
     </div>
   </div>
-  {{if .CanEdit}}
   <div class="actions">
+    <a class="btn" href="/history?account={{.ID}}&range=30">{{template "icon-trend"}}History</a>
+    {{if .CanEdit}}
     <details class="pop">
       <summary class="btn">{{template "icon-edit"}}Rename</summary>
       <form method="post" action="/accounts/{{.ID}}/rename" class="pop-body">
@@ -25,8 +26,8 @@
     <form method="post" action="/accounts/{{.ID}}/poll"><input type="hidden" name="back" value="/accounts/{{.ID}}"><button class="btn">{{template "icon-refresh"}}Refresh now</button></form>
     {{end}}
     <form method="post" action="/accounts/{{.ID}}/delete" data-confirm="Delete {{.Name}} and all its history?"><button class="btn btn-danger">{{template "icon-trash"}}Delete</button></form>
+    {{end}}
   </div>
-  {{end}}
 </div>
 
 {{template "error-note" .LastError}}

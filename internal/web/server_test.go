@@ -114,7 +114,9 @@ func TestPagesRender(t *testing.T) {
 	e := newEnv(t, Config{AdminPassword: "correct horse"})
 	sub, api, push := e.seed()
 	c := e.login("admin", "correct horse", "10.0.0.1")
-	for _, path := range []string{"/", "/?show=api&range=90", "/?show=subs&range=7", "/accounts", "/accounts/new", "/settings",
+	for _, path := range []string{"/", "/history", "/history?range=90&metric=tokens", fmt.Sprintf("/history?range=365&account=%d", api),
+		fmt.Sprintf("/history?range=30&account=%d", sub),
+		"/?show=api&range=90", "/?show=subs&range=7", "/accounts", "/accounts/new", "/settings",
 		fmt.Sprintf("/accounts/%d", sub), fmt.Sprintf("/accounts/%d", api), fmt.Sprintf("/accounts/%d?metric=tokens&basis=30", api),
 		fmt.Sprintf("/accounts/%d", push)} {
 		w := e.do("GET", path, "10.0.0.1", c, nil)
@@ -129,6 +131,18 @@ func TestPagesRender(t *testing.T) {
 	for _, want := range []string{"Balance runs out", "Burn rate", "Limit reached", "By model"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("account page missing %q", want)
+		}
+	}
+	history := e.do("GET", "/history", "10.0.0.1", c, nil).Body.String()
+	for _, want := range []string{"By account", "By model", "Daily breakdown", "OpenRouter"} {
+		if !strings.Contains(history, want) {
+			t.Errorf("history page missing %q", want)
+		}
+	}
+	accounts := e.do("GET", "/accounts", "10.0.0.1", c, nil).Body.String()
+	for _, want := range []string{"Subscriptions", "Pay-as-you-go", "Local tools"} {
+		if !strings.Contains(accounts, want) {
+			t.Errorf("accounts page missing %q", want)
 		}
 	}
 	if !strings.Contains(e.do("GET", "/", "10.0.0.1", c, nil).Body.String(), "At this pace") {
@@ -197,6 +211,10 @@ func TestViewerIsReadOnly(t *testing.T) {
 	}
 	if w := e.do("GET", "/", "10.0.0.2", v, nil); w.Code != 200 || strings.Contains(w.Body.String(), "Refresh all") {
 		t.Errorf("viewer dashboard: %d", w.Code)
+	}
+	if w := e.do("GET", fmt.Sprintf("/accounts/%d", api), "10.0.0.2", v, nil); w.Code != 200 ||
+		!strings.Contains(w.Body.String(), "History") || strings.Contains(w.Body.String(), "Delete") {
+		t.Errorf("viewer account page: %d", w.Code)
 	}
 	// Viewers can still change their own appearance.
 	if w := e.do("POST", "/settings/appearance", "10.0.0.2", v, url.Values{"theme": {"gruvbox"}}); w.Code != http.StatusSeeOther {

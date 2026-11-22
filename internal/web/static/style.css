@@ -304,6 +304,25 @@ pre.code { background: var(--surface2); border: 1px solid var(--border); border-
   white-space: pre-wrap; word-break: break-all; margin: 0; }
 .usercode { font-size: 1.5rem; letter-spacing: .15em; text-align: center; }
 
+/* ---- history ---- */
+.filter-form { display: flex; gap: 8px; align-items: center; }
+.filter-form select { width: auto; min-width: 170px; }
+.filter-form .btn { min-height: 40px; }
+.acct-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.acct-cell .pbadge { width: 30px; height: 30px; border-radius: 8px; font-size: 11px; }
+.limit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 16px; align-items: start; }
+.limit-card { display: flex; flex-direction: column; gap: 6px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface2); }
+.limit-card .win-chart { flex: none; width: 100%; height: 56px; margin-top: 4px; }
+.limit-card .chart-empty { flex: none; margin-top: 4px; }
+.share.inline { display: inline-block; width: 66px; vertical-align: middle; margin: 0 6px 0 0; }
+tfoot td { font-weight: 600; border-bottom: none; }
+.daily summary .muted { margin-left: 8px; }
+
+/* ---- link tiles and account groups ---- */
+.tile-link { text-decoration: none; color: inherit; }
+.tile-link:hover { opacity: 1; border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.acct-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; text-align: right; }
+
 @media (max-width: 720px) {
   .wrap { padding: 20px 16px 40px; }
   .topbar-in { padding: 10px 16px; gap: 10px; }
@@ -314,4 +333,7 @@ pre.code { background: var(--surface2); border: 1px solid var(--border); border-
   .subnav { position: static; max-width: none; flex-direction: row; flex-wrap: wrap; }
   .subnav-note { display: none; }
   .pop-body { width: min(280px, calc(100vw - 32px)); }
+  .filter-form { flex-wrap: wrap; }
+  .filter-form select { flex: 1 1 160px; }
+  .acct-meta { align-items: flex-end; }
 }

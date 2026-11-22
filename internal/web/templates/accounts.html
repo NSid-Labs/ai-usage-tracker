@@ -1,27 +1,57 @@
 {{define "content"}}
 <div class="page-head">
-  <div><h1>Accounts</h1><p class="muted">Everything this tracker checks. Open one for charts, forecasts and actions.</p></div>
-  {{if .CanEdit}}<a class="btn btn-primary" href="/accounts/new">{{template "icon-plus"}}Add account</a>{{end}}
+  <div><h1>Accounts</h1><p class="muted">Everything this tracker checks, grouped by how it is billed. Open one for charts, forecasts and actions.</p></div>
+  <div class="actions">
+    <a class="btn" href="/history">{{template "icon-trend"}}History</a>
+    {{if .CanEdit}}<a class="btn btn-primary" href="/accounts/new">{{template "icon-plus"}}Add account</a>{{end}}
+  </div>
 </div>
-{{if .Accounts}}
-<section class="panel">
-  <ul class="acct-list">
-  {{range .Accounts}}
-    <li>
-      {{template "badge" .}}
-      <div class="grow">
-        <a class="strong" href="/accounts/{{.ID}}">{{.Name}}</a>
-        <div class="muted small">{{.ProviderLabel}}{{if .Plan}} · {{.Plan}}{{end}}</div>
-      </div>
-      <div class="acct-meta">
-        {{if .LastError}}<span class="lvl-crit small"><span class="dot dot-crit" aria-hidden="true"></span>Error</span>
-        {{else}}<span class="muted small"><span class="dot dot-ok" aria-hidden="true"></span>{{if .IsPush}}pushed{{else}}updated{{end}} {{ago .LastPoll}}</span>{{end}}
-      </div>
-    </li>
+{{if .Total}}
+<div class="sections">
+  {{if .Subs}}
+  <section class="sec-subs" aria-labelledby="acc-subs-h">
+    <div class="sec-head"><h2 id="acc-subs-h">Subscriptions</h2><span class="muted">{{len .Subs}} {{if eq (len .Subs) 1}}account{{else}}accounts{{end}} · rate-limit windows</span></div>
+    <div class="panel"><ul class="acct-list">
+      {{range .Subs}}{{template "acct-row" .}}{{end}}
+    </ul></div>
+  </section>
   {{end}}
-  </ul>
-</section>
+
+  {{if .API}}
+  <section class="sec-api" aria-labelledby="acc-api-h">
+    <div class="sec-head"><h2 id="acc-api-h">Pay-as-you-go</h2><span class="muted">{{len .API}} {{if eq (len .API) 1}}account{{else}}accounts{{end}} · spend and tokens</span></div>
+    <div class="panel"><ul class="acct-list">
+      {{range .API}}{{template "acct-row" .}}{{end}}
+    </ul></div>
+  </section>
+  {{end}}
+
+  {{if .Push}}
+  <section class="sec-push" aria-labelledby="acc-push-h">
+    <div class="sec-head"><h2 id="acc-push-h">Local tools</h2><span class="muted">{{len .Push}} {{if eq (len .Push) 1}}account{{else}}accounts{{end}} · usage pushed from your machines</span></div>
+    <div class="panel"><ul class="acct-list">
+      {{range .Push}}{{template "acct-row" .}}{{end}}
+    </ul></div>
+  </section>
+  {{end}}
+</div>
 {{else}}
-<div class="empty"><h2>No accounts yet</h2>{{if .CanEdit}}<a class="btn btn-primary" href="/accounts/new">{{template "icon-plus"}}Add your first account</a>{{end}}</div>
+<div class="empty"><h2>No accounts yet</h2><p class="muted">Connect a subscription, an API key, or a local tool like OpenCode to start tracking.</p>{{if .CanEdit}}<a class="btn btn-primary" href="/accounts/new">{{template "icon-plus"}}Add your first account</a>{{end}}</div>
 {{end}}
+{{end}}
+
+{{define "acct-row"}}
+<li>
+  {{template "badge" .}}
+  <div class="grow">
+    <a class="strong" href="/accounts/{{.ID}}">{{.Name}}</a>
+    <div class="muted small">{{.ProviderLabel}}{{if .Plan}} · {{.Plan}}{{end}}</div>
+  </div>
+  <div class="acct-meta">
+    {{if .IsOAuth}}<span class="muted small">{{len .Quotas}} limit {{if eq (len .Quotas) 1}}window{{else}}windows{{end}}</span>
+    {{else}}<span class="muted small">{{if .AnyCost}}{{money .CostRange}} · {{end}}{{tokens .TokensRange}} tokens · 30 days</span>{{end}}
+    {{if .LastError}}<span class="lvl-crit small"><span class="dot dot-crit" aria-hidden="true"></span>Error</span>
+    {{else}}<span class="muted small"><span class="dot dot-ok" aria-hidden="true"></span>{{if .IsPush}}pushed{{else}}updated{{end}} {{ago .LastPoll}}</span>{{end}}
+  </div>
+</li>
 {{end}}

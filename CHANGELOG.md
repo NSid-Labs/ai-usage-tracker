@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+- Added a **History** page: past consumption from 7 days to 12 months, with spend/tokens charts, a per-account
+  split, per-model totals, daily or monthly breakdowns and the recorded subscription limit history.
+- Reorganised **Accounts** into Subscriptions, Pay-as-you-go and Local tools, with a 30-day summary per account.
+- Linked the dashboard summary tiles and account pages to the new History view.
+- Added History to the main navigation.
+
 ## [0.1.1] - 2026-11-14
 
 - Fixed: OpenCode Go weekly and monthly limit forecasts said "stays near X%" on a new install. They now
