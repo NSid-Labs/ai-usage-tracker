@@ -68,6 +68,21 @@ type Server struct {
 
 var pageNames = []string{"dashboard", "history", "accounts", "new", "oauth", "account", "push", "device", "settings", "login"}
 
+// assetVersion fingerprints the embedded static files so a CSS or JS change
+// gets a new URL. Browsers and CDNs (Cloudflare) can then cache them forever
+// instead of serving an old stylesheet after a deploy.
+var assetVersion = func() string {
+	h := sha256.New()
+	for _, name := range []string{"static/style.css", "static/app.js", "static/theme.js"} {
+		b, err := fs.ReadFile(assets, name)
+		if err != nil {
+			return "1"
+		}
+		h.Write(b)
+	}
+	return hex.EncodeToString(h.Sum(nil)[:4])
+}()
+
 func New(st *store.Store, box *secrets.Box, pl *poller.Poller, cfg Config) (http.Handler, error) {
 	s := &Server{st: st, box: box, pl: pl, pages: map[string]*template.Template{}, pending: map[string]pending{},
 		publicURL: strings.TrimRight(os.Getenv("TRACKER_PUBLIC_URL"), "/"), trustProxy: cfg.TrustProxy, lim: newLimiter()}
@@ -181,18 +196,19 @@ func securityHeaders(next http.Handler) http.Handler {
 
 // layout is what base.html renders around every page.
 type layout struct {
-	Title      string
-	Nav        string
-	User       *store.User
-	Theme      string
-	ThemeLabel string
-	LightTheme string
-	DarkTheme  string
-	Follow     bool
-	Compact    bool
-	Flash      string
-	FlashErr   string
-	Data       any
+	Title        string
+	Nav          string
+	User         *store.User
+	Theme        string
+	ThemeLabel   string
+	LightTheme   string
+	DarkTheme    string
+	Follow       bool
+	Compact      bool
+	AssetVersion string
+	Flash        string
+	FlashErr     string
+	Data         any
 }
 
 var flashes = map[string]string{
@@ -209,7 +225,7 @@ var flashes = map[string]string{
 }
 
 func (s *Server) newLayout(r *http.Request, title, nav string, data any) layout {
-	l := layout{Title: title, Nav: nav, Data: data}
+	l := layout{Title: title, Nav: nav, Data: data, AssetVersion: assetVersion}
 	prefs := store.Prefs{Theme: defaultTheme, FollowSystem: true}
 	if id, ok := currentUser(r); ok {
 		u := id.User
