@@ -52,7 +52,14 @@ func ReadOpenCode(ctx context.Context, path string, days int) ([]Row, error) {
 	if _, err := os.Stat(path); err != nil {
 		return nil, fmt.Errorf("opencode database: %w", err)
 	}
-	dsn := (&url.URL{Scheme: "file", Path: path, RawQuery: "mode=ro&_pragma=busy_timeout(5000)"}).String()
+	// A file: URL needs an absolute path with forward slashes. On Windows the
+	// drive letter must be preceded by a slash ("file:///C:/...") or the driver
+	// reads "C:" as a URI authority.
+	p := filepath.ToSlash(path)
+	if p[0] != '/' {
+		p = "/" + p
+	}
+	dsn := (&url.URL{Scheme: "file", Path: p, RawQuery: "mode=ro&_pragma=busy_timeout(5000)"}).String()
 	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, err

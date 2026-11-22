@@ -53,6 +53,17 @@ func TestSaveAndAggregate(t *testing.T) {
 	if a.Plan != "max" || a.LastPoll == 0 {
 		t.Errorf("account not updated: %+v", a)
 	}
+	rows, err := st.DailyUsageSince(today, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 || rows[0].AccountID != id || rows[0].USD != 1.5 || rows[0].Tokens() != 116 {
+		t.Errorf("history rows = %+v", rows)
+	}
+	models, err := st.ModelTotalsSince(today, 0)
+	if err != nil || len(models) != 2 || models[0].Model != "m2" {
+		t.Errorf("history models = %+v, %v", models, err)
+	}
 	if err := st.DeleteAccount(id); err != nil {
 		t.Fatal(err)
 	}

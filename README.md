@@ -16,6 +16,8 @@ and ChatGPT limits, what your API keys cost per day, and when you'll run out, wi
   **OpenRouter** (spend, key limits, credit balance), **OpenCode** Console budgets and local OpenCode sessions.
 - **Forecasts**: burn rate, projected month total, and when a balance or key limit runs out. Limit forecasts work
   from the first check, and API accounts backfill 30 days of history when you add them.
+- **History**: a dedicated page for past consumption, from 7 days to 12 months, with spend/tokens charts, a
+  per-account split, per-model token totals, a daily or monthly breakdown, and the recorded limit-window history.
 - **Multi-user**: admin and read-only viewer accounts, sessions, and read-only API tokens for Home Assistant
   or a status bar.
 - **19 editor themes**: Dracula, One Dark, Catppuccin, Gruvbox, Nord, Tokyo Night, Monokai, Solarized,
@@ -206,6 +208,21 @@ A separate OAuth login avoids that.
 > Claude Code and the Codex CLI use. These are **not documented public APIs**. They may change or break, and
 > the provider's terms may not cover this use. Endpoint URLs can be overridden with env vars
 > (`CLAUDE_OAUTH_TOKEN_URL`, `CLAUDE_USAGE_URL`, `CHATGPT_USAGE_URL`, … see `internal/providers/*_sub.go`).
+
+## History
+
+**History** in the header opens the past-consumption page. It covers every account, or one account picked from
+the dropdown, and offers 7-day, 30-day, 90-day and 12-month ranges:
+
+- **Spend or tokens** as a bar chart, with the same totals, requests and daily average above it and a comparison
+  with the previous period of the same length.
+- **By account** and **by model** tables, so you can see which account or model is responsible for the total.
+- A **daily or monthly breakdown** table (monthly for the 12-month range) with a total row. Daily usage and cost
+  rows are kept indefinitely; only limit-window snapshots are pruned by the history-retention setting.
+- **Subscription limits** below the spend history: each tracked window gets its own chart over the chosen range,
+  with the current percentage, reset time and peak.
+
+Open History from an account page to keep that account selected, or use the dashboard's spend and token tiles.
 
 ## How forecasts work
 

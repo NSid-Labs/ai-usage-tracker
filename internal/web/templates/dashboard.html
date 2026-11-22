@@ -24,12 +24,12 @@
 </div>
 
 <div class="tiles">
-  <div class="tile">
+  <a class="tile tile-link" href="/history?range={{.RangeDays}}&metric=spend">
     <div class="tile-label">Pay-as-you-go spend · {{.RangeLabel}}</div>
     <div class="tile-value">{{money .Spend}}</div>
-    <div class="tile-sub">across {{.SpendAccounts}} {{if eq .SpendAccounts 1}}account{{else}}accounts{{end}}</div>
-  </div>
-  <div class="tile">
+    <div class="tile-sub">across {{.SpendAccounts}} {{if eq .SpendAccounts 1}}account{{else}}accounts{{end}} · open history</div>
+  </a>
+  <a class="tile tile-link" href="/accounts">
     <div class="tile-label">Closest to a limit</div>
     {{with .Closest}}
     <div class="tile-value lvl-{{.Level}}">{{pct .Pct}}</div>
@@ -38,18 +38,18 @@
     <div class="tile-value">–</div>
     <div class="tile-sub">no limits tracked</div>
     {{end}}
-  </div>
-  <div class="tile">
+  </a>
+  <a class="tile tile-link" href="/history?range={{.RangeDays}}&metric=tokens">
     <div class="tile-label">Tokens · {{.RangeLabel}}</div>
     <div class="tile-value">{{tokens .Tokens}}</div>
-    <div class="tile-sub">API and local sessions</div>
-  </div>
-  <div class="tile">
+    <div class="tile-sub">API and local sessions · open history</div>
+  </a>
+  <a class="tile tile-link" href="/accounts">
     <div class="tile-label">Accounts</div>
     <div class="tile-value">{{.Total}}</div>
     {{if .Attention}}<div class="tile-sub attn"><span class="dot dot-crit" aria-hidden="true"></span>{{.Attention}} {{if eq .Attention 1}}needs{{else}}need{{end}} attention</div>
     {{else}}<div class="tile-sub"><span class="dot dot-ok" aria-hidden="true"></span>all working</div>{{end}}
-  </div>
+  </a>
 </div>
 
 <div class="sections{{if .APIFirst}} api-first{{end}}">

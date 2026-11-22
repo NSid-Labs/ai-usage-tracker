@@ -66,7 +66,7 @@ type Server struct {
 	pending map[string]pending
 }
 
-var pageNames = []string{"dashboard", "accounts", "new", "oauth", "account", "push", "device", "settings", "login"}
+var pageNames = []string{"dashboard", "history", "accounts", "new", "oauth", "account", "push", "device", "settings", "login"}
 
 func New(st *store.Store, box *secrets.Box, pl *poller.Poller, cfg Config) (http.Handler, error) {
 	s := &Server{st: st, box: box, pl: pl, pages: map[string]*template.Template{}, pending: map[string]pending{},
@@ -117,6 +117,7 @@ func New(st *store.Store, box *secrets.Box, pl *poller.Poller, cfg Config) (http
 	mux.HandleFunc("POST /logout", s.logout)
 
 	mux.HandleFunc("GET /{$}", s.dashboard)
+	mux.HandleFunc("GET /history", s.history)
 	mux.HandleFunc("GET /accounts", s.accountsList)
 	mux.HandleFunc("GET /accounts/new", admin(s.newAccount))
 	mux.HandleFunc("POST /accounts/apikey", admin(s.createAPIKey))
@@ -275,6 +276,7 @@ type dashboardPage struct {
 	ShowAPI       bool
 	Filters       []option
 	Ranges        []option
+	RangeDays     int
 	RangeLabel    string
 	Spend         float64
 	SpendAccounts int
@@ -331,7 +333,7 @@ func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {
 	if show != "subs" && show != "api" {
 		show = "all"
 	}
-	p := dashboardPage{RangeLabel: fmt.Sprintf("%d days", days), Interval: everyLabel(s.pl.Interval()),
+	p := dashboardPage{RangeLabel: fmt.Sprintf("%d days", days), RangeDays: days, Interval: everyLabel(s.pl.Interval()),
 		APIFirst: u.Prefs.ShowFirst == "api", ShowSubs: show != "api", ShowAPI: show != "subs", CanEdit: u.IsAdmin()}
 	q := func(show string, days int) string { return fmt.Sprintf("/?show=%s&range=%d", show, days) }
 	for _, f := range []struct{ id, label string }{{"all", "All"}, {"subs", "Subscriptions"}, {"api", "Pay-as-you-go"}} {
@@ -374,22 +376,38 @@ func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, "dashboard", "Dashboard", "dashboard", p)
 }
 
+// ---- accounts list ----
+
+type accountsPage struct {
+	Subs, API, Push []accountView
+	Total           int
+	CanEdit         bool
+}
+
 func (s *Server) accountsList(w http.ResponseWriter, r *http.Request) {
 	accounts, err := s.st.ListAccounts()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	var views []accountView
+	p := accountsPage{CanEdit: me(r).IsAdmin()}
 	for _, a := range accounts {
 		v, err := s.buildView(a, viewOpts{days: 30})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		views = append(views, v)
+		p.Total++
+		switch v.Kind {
+		case "sub":
+			p.Subs = append(p.Subs, v)
+		case "push":
+			p.Push = append(p.Push, v)
+		default:
+			p.API = append(p.API, v)
+		}
 	}
-	s.render(w, r, "accounts", "Accounts", "accounts", map[string]any{"Accounts": views, "CanEdit": me(r).IsAdmin()})
+	s.render(w, r, "accounts", "Accounts", "accounts", p)
 }
 
 // ---- account page ----

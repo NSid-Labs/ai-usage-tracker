@@ -3,6 +3,7 @@ package store
 
 import (
 	"database/sql"
+	"sort"
 	"sync/atomic"
 	"time"
 
@@ -316,6 +317,86 @@ func (s *Store) DailyTotals(id int64, days int) ([]DayTotal, error) {
 	return out, rows.Err()
 }
 
+// AccountDayTotal is one account's usage on one UTC day. It is the building
+// block of the History page, which mixes accounts, days and models.
+type AccountDayTotal struct {
+	AccountID                                      int64
+	Day                                            string
+	USD                                            float64
+	Input, Output, CacheRead, CacheWrite, Requests int64
+}
+
+func (d AccountDayTotal) Tokens() int64 { return d.Input + d.Output + d.CacheRead + d.CacheWrite }
+
+// DailyUsageSince returns per-account daily totals since the given day
+// (inclusive), oldest first. accountID 0 means every account.
+func (s *Store) DailyUsageSince(since string, accountID int64) ([]AccountDayTotal, error) {
+	filter := ""
+	args := []any{since}
+	if accountID > 0 {
+		filter = " AND account_id = ?"
+		args = append(args, accountID)
+	}
+	type key struct {
+		id  int64
+		day string
+	}
+	byKey := map[key]*AccountDayTotal{}
+
+	rows, err := s.db.Query(`SELECT account_id, day, SUM(input), SUM(output), SUM(cache_read), SUM(cache_write), SUM(requests)
+		FROM daily_usage WHERE day >= ?`+filter+` GROUP BY account_id, day`, args...)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var d AccountDayTotal
+		if err := rows.Scan(&d.AccountID, &d.Day, &d.Input, &d.Output, &d.CacheRead, &d.CacheWrite, &d.Requests); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		byKey[key{d.AccountID, d.Day}] = &d
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	rows, err = s.db.Query(`SELECT account_id, day, usd FROM daily_cost WHERE day >= ?`+filter, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int64
+		var day string
+		var usd float64
+		if err := rows.Scan(&id, &day, &usd); err != nil {
+			return nil, err
+		}
+		k := key{id, day}
+		if d := byKey[k]; d != nil {
+			d.USD = usd
+		} else {
+			byKey[k] = &AccountDayTotal{AccountID: id, Day: day, USD: usd}
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	out := make([]AccountDayTotal, 0, len(byKey))
+	for _, d := range byKey {
+		out = append(out, *d)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Day != out[j].Day {
+			return out[i].Day < out[j].Day
+		}
+		return out[i].AccountID < out[j].AccountID
+	})
+	return out, nil
+}
+
 type ModelTotal struct {
 	Model                                          string
 	Input, Output, CacheRead, CacheWrite, Requests int64
@@ -325,9 +406,21 @@ func (m ModelTotal) Tokens() int64 { return m.Input + m.Output + m.CacheRead + m
 
 func (s *Store) ModelTotals(id int64, days int) ([]ModelTotal, error) {
 	since := time.Now().UTC().AddDate(0, 0, -(days - 1)).Format(time.DateOnly)
+	return s.ModelTotalsSince(since, id)
+}
+
+// ModelTotalsSince returns per-model totals since the given day, for one
+// account or for every account when accountID is 0.
+func (s *Store) ModelTotalsSince(since string, accountID int64) ([]ModelTotal, error) {
+	filter := ""
+	args := []any{since}
+	if accountID > 0 {
+		filter = " AND account_id = ?"
+		args = append(args, accountID)
+	}
 	rows, err := s.db.Query(`SELECT model, SUM(input), SUM(output), SUM(cache_read), SUM(cache_write), SUM(requests)
-		FROM daily_usage WHERE account_id = ? AND day >= ? GROUP BY model
-		ORDER BY SUM(input + output + cache_read + cache_write) DESC`, id, since)
+		FROM daily_usage WHERE day >= ?`+filter+` GROUP BY model
+		ORDER BY SUM(input + output + cache_read + cache_write) DESC`, args...)
 	if err != nil {
 		return nil, err
 	}

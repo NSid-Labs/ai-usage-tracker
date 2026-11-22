@@ -1,0 +1,149 @@
+{{define "content"}}
+<div class="page-head">
+  <div>
+    <h1>History</h1>
+    <p class="muted">{{if .AccountName}}{{.AccountName}} · {{end}}{{if .Subscription}}limit history{{else}}past consumption{{end}} over the last {{.RangeLabel}} · UTC days</p>
+  </div>
+  <div class="controls">
+    <div role="group" aria-label="Range">{{template "seg" .Ranges}}</div>
+    {{if .Metrics}}<div role="group" aria-label="Metric">{{template "seg" .Metrics}}</div>{{end}}
+    <form class="filter-form" method="get" action="/history">
+      <input type="hidden" name="range" value="{{.RangeDays}}">
+      {{if and .Metric (not .Subscription)}}<input type="hidden" name="metric" value="{{.Metric}}">{{end}}
+      <label class="sr" for="hist-account">Account</label>
+      <select id="hist-account" name="account">
+        {{range .Accounts}}<option value="{{.ID}}"{{if .Selected}} selected{{end}}>{{.Label}}</option>{{end}}
+      </select>
+      <button class="btn">Apply</button>
+    </form>
+  </div>
+</div>
+
+{{if not .Subscription}}
+<div class="tiles">
+  {{if .HasCost}}
+  <div class="tile">
+    <div class="tile-label">Spend · {{.RangeLabel}}</div>
+    <div class="tile-value">{{money .TotalSpend}}</div>
+    <div class="tile-sub">{{if .SpendDelta}}{{.SpendDelta}}{{else}}in this period{{end}}</div>
+  </div>
+  {{end}}
+  <div class="tile">
+    <div class="tile-label">Tokens · {{.RangeLabel}}</div>
+    <div class="tile-value">{{tokens .TotalTokens}}</div>
+    <div class="tile-sub">{{if .TokenDelta}}{{.TokenDelta}}{{else}}in this period{{end}}</div>
+  </div>
+  <div class="tile">
+    <div class="tile-label">Requests</div>
+    <div class="tile-value">{{tokens .TotalReqs}}</div>
+    <div class="tile-sub">recorded in this period</div>
+  </div>
+  <div class="tile">
+    <div class="tile-label">Daily average</div>
+    <div class="tile-value">{{.AvgValue}}</div>
+    <div class="tile-sub">{{.AvgSub}}</div>
+  </div>
+</div>
+{{end}}
+
+{{if not .Subscription}}
+{{if .HasData}}
+<section class="panel" aria-labelledby="hist-chart-h">
+  <div class="panel-head">
+    <div>
+      <h2 id="hist-chart-h">{{.Chart.Per}} {{if eq .Chart.Metric "spend"}}spend{{else}}tokens{{end}} · {{.RangeLabel}}</h2>
+      <p class="muted small">Totals per {{if eq .Chart.Per "Monthly"}}month{{else}}day{{end}}{{if .AccountName}} for {{.AccountName}}{{end}}.</p>
+    </div>
+  </div>
+  <div class="chart">
+    <div class="y-axis" aria-hidden="true">{{range .Chart.Axis}}<span>{{.}}</span>{{end}}</div>
+    <div class="chart-main">
+      <div class="bars big" role="img" aria-label="{{.Chart.Per}} {{.Chart.Metric}} for the last {{.RangeLabel}}">
+        {{range .Chart.Bars}}<span class="{{.Class}}" style="{{.Style}}" title="{{.Title}}"></span>{{end}}
+      </div>
+      <div class="axis"><span>{{.Chart.Start}}</span><span>{{.Chart.End}}</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="split">
+  <section class="panel grow" aria-labelledby="hist-acc-h">
+    <div class="panel-head">
+      <h2 id="hist-acc-h">By account</h2>
+      <span class="muted small">Share of {{if eq .Chart.Metric "spend"}}spend{{else}}tokens{{end}}</span>
+    </div>
+    {{if .Rows}}
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Account</th>{{if .HasCost}}<th scope="col">Spend</th>{{end}}<th scope="col">Tokens</th><th scope="col">Requests</th><th scope="col">Share</th></tr></thead>
+      <tbody>{{range .Rows}}<tr>
+        <td><div class="acct-cell">{{template "badge" .}}<div><a class="strong" href="/accounts/{{.ID}}">{{.Name}}</a><div class="muted small">{{.ProviderLabel}}</div></div></div></td>
+        {{if $.HasCost}}<td>{{if .USD}}{{money .USD}}{{else}}<span class="muted">—</span>{{end}}</td>{{end}}
+        <td>{{tokens .Tokens}}</td><td>{{tokens .Requests}}</td>
+        <td><div class="share inline"><span style="{{.Share}}"></span></div><span class="muted small">{{pct .SharePct}}</span></td>
+      </tr>{{end}}</tbody>
+    </table></div>
+    {{else}}<p class="muted">No usage per account in this period.</p>{{end}}
+  </section>
+
+  <section class="panel grow" aria-labelledby="hist-model-h">
+    <div class="panel-head">
+      <h2 id="hist-model-h">By model</h2>
+      <span class="muted small">Tokens in this period</span>
+    </div>
+    {{if .Models}}
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Model</th><th scope="col">Requests</th><th scope="col">Input</th><th scope="col">Output</th><th scope="col">Tokens</th></tr></thead>
+      <tbody>{{range .Models}}<tr>
+        <td><div class="strong">{{.Model}}</div><div class="share"><span style="{{.Share}}"></span></div></td>
+        <td>{{tokens .Requests}}</td><td>{{tokens .Input}}</td><td>{{tokens .Output}}</td><td class="strong">{{tokens .Tokens}}</td>
+      </tr>{{end}}</tbody>
+    </table></div>
+    {{else}}<p class="muted">No per-model usage in this period.</p>{{end}}
+  </section>
+</div>
+
+<details class="panel daily">
+  <summary><h2>{{.Chart.Per}} breakdown</h2><span class="muted small">{{len .Buckets}} rows · newest first</span></summary>
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">{{.Chart.Per}} (UTC)</th>{{if .HasCost}}<th scope="col">Spend</th>{{end}}<th scope="col">Tokens</th><th scope="col">Requests</th></tr></thead>
+    <tbody>{{range .Buckets}}<tr><td>{{.Label}}</td>{{if $.HasCost}}<td>{{money .USD}}</td>{{end}}<td>{{tokens .Tokens}}</td><td>{{tokens .Requests}}</td></tr>{{end}}</tbody>
+    <tfoot><tr><td>Total</td>{{if .HasCost}}<td>{{money .TotalSpend}}</td>{{end}}<td>{{tokens .TotalTokens}}</td><td>{{tokens .TotalReqs}}</td></tr></tfoot>
+  </table></div>
+</details>
+{{else}}
+<div class="empty">
+  <h2>No usage recorded in this period</h2>
+  <p class="muted">Try a longer range{{if .AccountName}}, another account,{{end}} or check back after the next refresh.</p>
+  <a class="btn" href="/history?range=365">See the last 12 months</a>
+</div>
+{{end}}
+{{end}}
+
+{{if .Limits}}
+<section class="panel" aria-labelledby="hist-limits-h">
+  <div class="panel-head">
+    <div>
+      <h2 id="hist-limits-h">Subscription limits · {{.RangeLabel}}</h2>
+      <p class="muted small">Check-ins recorded for each limit window. Dashed line: your warning level.</p>
+    </div>
+  </div>
+  <div class="limit-grid">
+    {{range .Limits}}
+    <div class="limit-card">
+      <div class="q-top"><span class="strong">{{.AccountName}} · {{.Label}}</span><span class="q-pct lvl-{{.Level}}">{{pct .UsedPercent}}</span></div>
+      <div class="meter"><span class="fill-{{.Level}}" style="{{.Fill}}"></span></div>
+      <div class="muted small">{{if .ResetsIn}}resets {{.ResetsIn}}{{else}}no reset time{{end}}{{if .Detail}} · {{.Detail}}{{end}} · peak {{pct .Peak}}</div>
+      {{.Chart}}
+    </div>
+    {{end}}
+  </div>
+</section>
+{{else}}
+{{if .Subscription}}
+<div class="empty">
+  <h2>No limit history in this period</h2>
+  <p class="muted">Limits start building history the first time this account is checked. Try a longer range.</p>
+</div>
+{{end}}
+{{end}}
+{{end}}

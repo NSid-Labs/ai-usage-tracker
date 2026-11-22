@@ -575,7 +575,7 @@ func (s *Server) windowChart(hist []store.QuotaSample, label string) template.HT
 	}
 	pts := strings.TrimSpace(line.String())
 	warnY := y(float64(s.settings().Warn))
-	return template.HTML(fmt.Sprintf(`<svg class="win-chart" viewBox="0 0 %.0f %.0f" preserveAspectRatio="none" role="img" aria-label="%s use over the last 30 days">`+
+	return template.HTML(fmt.Sprintf(`<svg class="win-chart" viewBox="0 0 %.0f %.0f" preserveAspectRatio="none" role="img" aria-label="%s use history">`+
 		`<polygon class="area" points="0,%.0f %s %.0f,%.0f"/><polyline class="line" points="%s"/>`+
 		`<line class="warn-line" x1="0" x2="%.0f" y1="%.1f" y2="%.1f"/></svg>`,
 		w, h, template.HTMLEscapeString(label), h, pts, w, h, pts, w, warnY, warnY))
